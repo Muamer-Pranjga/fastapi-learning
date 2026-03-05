@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models
 import schemas
+from auth import get_current_user
 import auth
 
 models.Base.metadata.create_all(bind=engine)
@@ -22,7 +23,7 @@ def get_tasks(db: Session = Depends(get_db)):
     return db.query(models.Task).all()
 
 @app.post("/tasks", response_model=schemas.TaskResponse)
-def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
+def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     new_task = models.Task(title=task.title, done=task.done)
     db.add(new_task)
     db.commit()
@@ -30,7 +31,7 @@ def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
     return new_task
 
 @app.put("/tasks/{task_id}", response_model=schemas.TaskResponse)
-def update_task(task_id: int, updated_task: schemas.TaskCreate, db: Session = Depends(get_db)):
+def update_task(task_id: int, updated_task: schemas.TaskCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     task = db.query(models.Task).filter(models.Task.id == task_id).first()
     task.title = updated_task.title
     task.done = updated_task.done
@@ -39,7 +40,7 @@ def update_task(task_id: int, updated_task: schemas.TaskCreate, db: Session = De
     return task
 
 @app.delete("/tasks/{task_id}")
-def delete_task(task_id: int, db: Session = Depends(get_db)):
+def delete_task(task_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     task = db.query(models.Task).filter(models.Task.id == task_id).first()
     db.delete(task)
     db.commit()
